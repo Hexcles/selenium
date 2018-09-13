@@ -103,10 +103,17 @@ func Output(w io.Writer) ServiceOption {
 	}
 }
 
+// ChromeDriver sets the path to the chromedriver binary for the Selenium
+// Server. This ServiceOption is only useful when calling NewSeleniumService.
+func ChromeDriver(path string) ServiceOption {
+	return func(s *Service) error {
+		s.chromeDriverPath = path
+		return nil
+	}
+}
+
 // GeckoDriver sets the path to the geckodriver binary for the Selenium Server.
-// Unlike other drivers, Selenium Server does not support specifying the
-// geckodriver path at runtime. This ServiceOption is only useful when calling
-// NewSeleniumService.
+// This ServiceOption is only useful when calling NewSeleniumService.
 func GeckoDriver(path string) ServiceOption {
 	return func(s *Service) error {
 		s.geckoDriverPath = path
@@ -132,7 +139,7 @@ type Service struct {
 	display, xauthPath string
 	xvfb               *FrameBuffer
 
-	geckoDriverPath, javaPath string
+	chromeDriverPath, geckoDriverPath, javaPath string
 
 	output io.Writer
 }
@@ -155,6 +162,9 @@ func NewSeleniumService(jarPath string, port int, opts ...ServiceOption) (*Servi
 	}
 	if s.javaPath != "" {
 		s.cmd.Path = s.javaPath
+	}
+	if s.chromeDriverPath != "" {
+		s.cmd.Args = append([]string{"java", "-Dwebdriver.chrome.driver=" + s.chromeDriverPath}, cmd.Args[1:]...)
 	}
 	if s.geckoDriverPath != "" {
 		s.cmd.Args = append([]string{"java", "-Dwebdriver.gecko.driver=" + s.geckoDriverPath}, cmd.Args[1:]...)
