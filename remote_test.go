@@ -191,7 +191,7 @@ func testChromeExtension(t *testing.T, c config) {
 	if err != nil {
 		t.Fatalf("NewRemote(_, _) returned error: %v", err)
 	}
-	defer wd.Quit()
+	defer quitRemote(t, wd)
 
 	if err := wd.Get(serverURL); err != nil {
 		t.Fatalf("wd.Get(%q) returned error: %v", serverURL, err)
@@ -356,11 +356,7 @@ func testFirefoxPreferences(t *testing.T, c config) {
 		capabilities: caps,
 		urlPrefix:    c.addr,
 	}
-	defer func() {
-		if err := wd.Quit(); err != nil {
-			t.Errorf("wd.Quit() returned error: %v", err)
-		}
-	}()
+	defer quitRemote(t, wd)
 
 	if _, err := wd.NewSession(); err != nil {
 		t.Fatalf("error in new session - %s", err)
@@ -594,11 +590,7 @@ func testNewSession(t *testing.T, c config) {
 		capabilities: newTestCapabilities(t, c),
 		urlPrefix:    c.addr,
 	}
-	defer func() {
-		if err := wd.Quit(); err != nil {
-			t.Errorf("wd.Quit() returned error: %v", err)
-		}
-	}()
+	defer quitRemote(t, wd)
 
 	sid, err := wd.NewSession()
 	if err != nil {
@@ -1682,11 +1674,8 @@ func testProxy(t *testing.T, c config) {
 		capabilities: caps,
 		urlPrefix:    c.addr,
 	}
-	defer func() {
-		if err := wd.Quit(); err != nil {
-			t.Fatalf("wd.Quit() returned error: %v", err)
-		}
-	}()
+	defer quitRemote(t, wd)
+
 	if _, err := wd.NewSession(); err != nil {
 		t.Fatalf("wd.NewSession() returned error: %v", err)
 	}
