@@ -73,7 +73,63 @@ type config struct {
 	serviceOptions      []ServiceOption
 }
 
-func TestChrome(t *testing.T) {
+func TestChromeSelenium3(t *testing.T) {
+	if *useDocker {
+		t.Skip("Skipping Chrome tests because they will be run under a Docker container")
+	}
+	if _, err := os.Stat(*selenium3Path); err != nil {
+		t.Skipf("Skipping Chrome tests using Selenium 3 because Selenium WebDriver JAR not found at path %q", *selenium3Path)
+	}
+	if _, err := os.Stat(*chromeBinary); err != nil {
+		path, err := exec.LookPath(*chromeBinary)
+		if err != nil {
+			t.Skipf("Skipping Chrome tests because binary %q not found", *chromeBinary)
+		}
+		*chromeBinary = path
+	}
+	if _, err := os.Stat(*chromeDriverPath); err != nil {
+		t.Skipf("Skipping Chrome tests because ChromeDriver not found at path %q", *chromeDriverPath)
+	}
+
+	opts := []ServiceOption{ChromeDriver(*chromeDriverPath)}
+	if *startFrameBuffer {
+		opts = append(opts, StartFrameBuffer())
+	}
+	if testing.Verbose() {
+		SetDebug(true)
+		opts = append(opts, Output(os.Stderr))
+	}
+	if *javaPath != "" {
+		opts = append(opts, JavaPath(*javaPath))
+	}
+
+	port, err := pickUnusedPort()
+	if err != nil {
+		t.Fatalf("pickUnusedPort() returned error: %v", err)
+	}
+
+	s, err := NewSeleniumService(*selenium3Path, port, opts...)
+	if err != nil {
+		t.Fatalf("Error starting the Selenium server: %v", err)
+	}
+	c := config{
+		addr:            fmt.Sprintf("http://127.0.0.1:%d/wd/hub", port),
+		browser:         "chrome",
+		path:            *chromeBinary,
+		seleniumVersion: semver.MustParse("3.0.0"),
+	}
+
+	runTests(t, c)
+
+	// Chrome-specific tests.
+	t.Run("Extension", runTest(testChromeExtension, c))
+
+	if err := s.Stop(); err != nil {
+		t.Fatalf("Error stopping the Selenium service: %v", err)
+	}
+}
+
+func TestChromeDriver(t *testing.T) {
 	if *useDocker {
 		t.Skip("Skipping Chrome tests because they will be run under a Docker container")
 	}
